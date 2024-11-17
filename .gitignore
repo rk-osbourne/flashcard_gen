@@ -1,0 +1,5 @@
+# Ignore environment settings
+fcenv/
+
+#ignore python cache files
+__pycache__/

@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flashcards</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <h1>Flashcards</h1>
+    <ul>
+        {% for flashcard in flashcards %}
+            <li><strong>{{ flashcard.word }}</strong>: {{ flashcard.translation }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
