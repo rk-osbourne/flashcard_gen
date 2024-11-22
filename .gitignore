@@ -3,3 +3,8 @@ fcenv/
 
 #ignore python cache files
 __pycache__/
+
+#ignore terraform statefile, etc. 
+*.tfstate
+*.tfstate.backup
+.terraform/
