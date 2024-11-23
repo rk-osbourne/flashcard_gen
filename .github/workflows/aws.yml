@@ -100,11 +100,16 @@ jobs:
             --query "taskDefinition" \
             --output json > current-task-def.json
 
+          # Remove fields that are not allowed in the register-task-definition API
+          jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy)' \
+          current-task-def.json > sanitized-task-def.json
+
+
           # Update the container image in the task definition using jq
           jq --arg image "${{ steps.build-image.outputs.image }}" \
             '.containerDefinitions[0].image = $image' \
-            current-task-def.json > new-task-def.json
-
+            sanitized-task-def.json > new-task-def.json
+            
           # Register a new revision of the task definition
           NEW_TASK_DEFINITION=$(aws ecs register-task-definition \
             --cli-input-json file://new-task-def.json \
