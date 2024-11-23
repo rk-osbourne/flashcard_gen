@@ -149,6 +149,18 @@ resource "aws_ecs_task_definition" "flashcards_task" {
   }])
 }
 
+resource "aws_ecs_task_definition" "main" {
+  family                = "flashcards-task"
+  container_definitions = file("flashcards-task.json")
+  network_mode          = "awsvpc"
+  requires_compatibilities = ["FARGATE"]
+  cpu                   = "256"
+  memory                = "512"
+  execution_role_arn    = aws_iam_role.ecs_execution_role.arn
+  task_role_arn         = aws_iam_role.ecs_task_role.arn
+}
+
+
 # ECS Service
 resource "aws_ecs_service" "flashcards_service" {
   name            = "flashcards-service"
