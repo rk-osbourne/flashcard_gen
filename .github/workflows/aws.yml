@@ -77,13 +77,40 @@ jobs:
         docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
         echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
 
-    - name: Fill in the new image ID in the Amazon ECS task definition
-      id: task-def
-      uses: aws-actions/amazon-ecs-render-task-definition@v1
-      with:
-        task-definition: ${{ env.ECS_TASK_DEFINITION }}
-        container-name: ${{ env.CONTAINER_NAME }}
-        image: ${{ steps.build-image.outputs.image }}
+    - name: Get the current ECS task definition
+      id: get-task-def
+      run: |
+        TASK_DEFINITION=$(aws ecs describe-services \
+          --cluster ${{ env.ECS_CLUSTER }} \
+          --services ${{ env.ECS_SERVICE }} \
+          --query "services[0].taskDefinition" \
+          --output text)
+        echo "TASK_DEFINITION=$TASK_DEFINITION" >> $GITHUB_ENV
+    
+    - name: Install jq
+      run: |
+        sudo apt-get update && sudo apt-get install -y jq
+
+    - name: Register new task definition revision with updated image
+      id: register-task-def
+      run: |
+          # Get the current task definition JSON
+          aws ecs describe-task-definition \
+            --task-definition ${{ env.TASK_DEFINITION }} \
+            --query "taskDefinition" \
+            --output json > current-task-def.json
+
+          # Update the container image in the task definition using jq
+          jq --arg image "${{ steps.build-image.outputs.image }}" \
+            '.containerDefinitions[0].image = $image' \
+            current-task-def.json > new-task-def.json
+
+          # Register a new revision of the task definition
+          NEW_TASK_DEFINITION=$(aws ecs register-task-definition \
+            --cli-input-json file://new-task-def.json \
+            --query "taskDefinition.taskDefinitionArn" \
+            --output text)
+          echo "NEW_TASK_DEFINITION=$NEW_TASK_DEFINITION" >> $GITHUB_ENV
 
     - name: Deploy Amazon ECS task definition
       uses: aws-actions/amazon-ecs-deploy-task-definition@v1
